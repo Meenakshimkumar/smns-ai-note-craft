@@ -29,7 +29,7 @@ export const AiChatWidget = () => {
     if (!input.trim()) return;
     
     // Add user message
-    const newMessages = [
+    const newMessages: Message[] = [
       ...messages,
       { role: "user", content: input.trim() },
     ];

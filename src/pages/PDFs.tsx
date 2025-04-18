@@ -1,325 +1,208 @@
 
 import React, { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { AiChatWidget } from "@/components/chat/AiChatWidget";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UploadCloud, FileText, Search, AlertCircle } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { AiChatWidget } from "@/components/chat/AiChatWidget";
+import { FileText, Upload, Search, List, AlertCircle } from "lucide-react";
 
-interface PDFFile {
-  id: string;
-  name: string;
-  size: string;
-  uploadDate: string;
-}
-
-const mockPDFs: PDFFile[] = [
+// Sample data for extracted questions
+const sampleQuestions = [
   {
-    id: "1",
-    name: "Lecture Notes Week 1.pdf",
-    size: "2.4 MB",
-    uploadDate: "2023-03-15",
+    id: 1,
+    question: "What are the key principles of React's component architecture?",
+    frequency: 3,
+    sources: ["React Basics.pdf", "Advanced Frontend.pdf", "Interview Prep.pdf"],
   },
   {
-    id: "2",
-    name: "Chemistry Question Bank.pdf",
-    size: "5.1 MB",
-    uploadDate: "2023-03-10",
+    id: 2,
+    question: "Explain the concept of state management in modern web applications.",
+    frequency: 2,
+    sources: ["React Basics.pdf", "Advanced Frontend.pdf"],
+  },
+  {
+    id: 3,
+    question: "How does the virtual DOM improve performance in React?",
+    frequency: 2,
+    sources: ["React Basics.pdf", "Performance Optimization.pdf"],
+  },
+];
+
+// Sample data for uploaded PDFs
+const samplePdfs = [
+  {
+    id: 1,
+    name: "React Basics.pdf",
+    size: "2.4 MB",
+    date: "2023-09-15",
+    questions: 12,
+  },
+  {
+    id: 2,
+    name: "Advanced Frontend.pdf",
+    size: "3.8 MB",
+    date: "2023-10-02",
+    questions: 18,
+  },
+  {
+    id: 3,
+    name: "Interview Prep.pdf",
+    size: "1.6 MB",
+    date: "2023-10-10",
+    questions: 25,
+  },
+  {
+    id: 4,
+    name: "Performance Optimization.pdf",
+    size: "2.2 MB",
+    date: "2023-09-28",
+    questions: 8,
   },
 ];
 
 const PDFs = () => {
-  const [pdfs, setPdfs] = useState<PDFFile[]>(mockPDFs);
-  const [dragActive, setDragActive] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("uploaded");
   
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
+  const filteredPdfs = samplePdfs.filter(pdf => 
+    pdf.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
   
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFiles(e.dataTransfer.files);
-    }
-  };
-  
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      handleFiles(e.target.files);
-    }
-  };
-  
-  const handleFiles = (files: FileList) => {
-    setAnalyzing(true);
-    setProgress(0);
-    
-    // Simulate file processing
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setAnalyzing(false);
-          
-          // Add the "uploaded" files to our list
-          const newPdfs = Array.from(files).map((file, index) => ({
-            id: `new-${Date.now()}-${index}`,
-            name: file.name,
-            size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-            uploadDate: new Date().toISOString().split("T")[0],
-          }));
-          
-          setPdfs((prev) => [...newPdfs, ...prev]);
-          return 0;
-        }
-        return prev + 10;
-      });
-    }, 500);
-  };
-  
-  const analyzePDFs = () => {
-    setAnalyzing(true);
-    setProgress(0);
-    
-    // Simulate analysis processing
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setAnalyzing(false);
-          return 0;
-        }
-        return prev + 5;
-      });
-    }, 300);
-  };
-  
+  const filteredQuestions = sampleQuestions.filter(q => 
+    q.question.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2">PDF Analysis</h1>
-        <p className="text-gray-600 mb-6">
-          Upload PDFs to extract questions, identify key concepts, and generate study materials.
-        </p>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold tracking-tight">PDF Management</h1>
+          <Button className="bg-smns-purple hover:bg-smns-purple-dark">
+            <Upload className="mr-2 h-4 w-4" /> Upload PDF
+          </Button>
+        </div>
         
-        <Tabs defaultValue="upload">
-          <TabsList className="mb-6">
-            <TabsTrigger value="upload">Upload PDFs</TabsTrigger>
-            <TabsTrigger value="library">My PDF Library</TabsTrigger>
-            <TabsTrigger value="analysis">Extracted Questions</TabsTrigger>
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search PDFs or questions..."
+            className="pl-8"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        
+        <Tabs defaultValue="uploaded" onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="uploaded">Uploaded PDFs</TabsTrigger>
+            <TabsTrigger value="questions">Extracted Questions</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="upload">
-            <Card>
-              <CardHeader>
-                <CardTitle>Upload Your PDFs</CardTitle>
-                <CardDescription>
-                  Drag and drop files or click to browse. We'll extract questions and key information.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div
-                  className={`border-2 border-dashed rounded-lg p-8 text-center ${
-                    dragActive ? "border-smns-purple bg-smns-purple-light/10" : "border-gray-300"
-                  }`}
-                  onDragEnter={handleDrag}
-                  onDragOver={handleDrag}
-                  onDragLeave={handleDrag}
-                  onDrop={handleDrop}
-                >
-                  <UploadCloud className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <p className="text-lg font-medium mb-2">
-                    {dragActive ? "Drop your files here" : "Drag & drop your PDFs here"}
-                  </p>
-                  <p className="text-sm text-gray-500 mb-4">
-                    or click to browse your files
-                  </p>
-                  <input
-                    type="file"
-                    id="file-upload"
-                    multiple
-                    accept=".pdf"
-                    className="hidden"
-                    onChange={handleFileChange}
-                  />
-                  <label htmlFor="file-upload">
-                    <Button variant="outline" className="mx-auto" as="span">
-                      Browse Files
-                    </Button>
-                  </label>
-                </div>
-                
-                {analyzing && (
-                  <div className="mt-6">
-                    <div className="flex justify-between mb-2 text-sm">
-                      <span>Processing your PDFs...</span>
-                      <span>{progress}%</span>
-                    </div>
-                    <Progress value={progress} className="h-2" />
-                  </div>
-                )}
-                
-                {pdfs.length > 0 && (
-                  <div className="mt-6">
-                    <h3 className="text-sm font-medium mb-3">Recent Uploads</h3>
-                    <div className="space-y-2">
-                      {pdfs.slice(0, 3).map((pdf) => (
-                        <div
-                          key={pdf.id}
-                          className="flex items-center p-3 bg-gray-50 rounded-lg"
-                        >
-                          <FileText className="h-5 w-5 text-smns-purple mr-3" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{pdf.name}</p>
-                            <p className="text-xs text-gray-500">
-                              {pdf.size} • Uploaded on {pdf.uploadDate}
-                            </p>
-                          </div>
+          <TabsContent value="uploaded" className="space-y-4">
+            {filteredPdfs.length > 0 ? (
+              filteredPdfs.map(pdf => (
+                <Card key={pdf.id}>
+                  <CardHeader className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3">
+                        <FileText className="h-8 w-8 text-smns-purple" />
+                        <div>
+                          <CardTitle className="text-lg">{pdf.name}</CardTitle>
+                          <CardDescription>
+                            {pdf.size} • Uploaded on {pdf.date}
+                          </CardDescription>
                         </div>
-                      ))}
-                    </div>
-                    
-                    {pdfs.length > 0 && (
-                      <div className="mt-6">
-                        <Button 
-                          className="w-full bg-smns-purple hover:bg-smns-purple-dark"
-                          onClick={analyzePDFs}
-                          disabled={analyzing}
-                        >
-                          <Search className="h-4 w-4 mr-2" />
-                          Analyze for Questions & Concepts
-                        </Button>
                       </div>
-                    )}
-                  </div>
+                      <Button variant="outline" className="h-8" size="sm">
+                        View
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="text-sm text-muted-foreground">
+                      {pdf.questions} questions extracted
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center p-8 text-center">
+                <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium">No PDFs Found</h3>
+                <p className="text-sm text-muted-foreground mt-2">
+                  {searchTerm
+                    ? `No PDFs match "${searchTerm}"`
+                    : "Upload your first PDF to get started"}
+                </p>
+                {!searchTerm && (
+                  <Button className="mt-4 bg-smns-purple hover:bg-smns-purple-dark">
+                    <Upload className="mr-2 h-4 w-4" /> Upload PDF
+                  </Button>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            )}
           </TabsContent>
           
-          <TabsContent value="library">
-            <Card>
-              <CardHeader>
-                <CardTitle>Your PDF Library</CardTitle>
-                <CardDescription>
-                  Manage your uploaded PDFs and view extraction results.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {pdfs.length > 0 ? (
-                  <div className="space-y-4">
-                    {pdfs.map((pdf) => (
-                      <div
-                        key={pdf.id}
-                        className="flex items-center justify-between p-4 bg-white border rounded-lg hover:shadow-sm transition-shadow"
-                      >
-                        <div className="flex items-center">
-                          <FileText className="h-8 w-8 text-smns-purple mr-4" />
-                          <div>
-                            <p className="font-medium">{pdf.name}</p>
-                            <p className="text-sm text-gray-500">
-                              {pdf.size} • Uploaded on {pdf.uploadDate}
-                            </p>
-                          </div>
-                        </div>
-                        <Button variant="outline" size="sm">
-                          View Analysis
-                        </Button>
+          <TabsContent value="questions" className="space-y-4">
+            {filteredQuestions.length > 0 ? (
+              filteredQuestions.map(q => (
+                <Card key={q.id}>
+                  <CardHeader className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-lg">{q.question}</CardTitle>
+                        <CardDescription>
+                          Appears in {q.frequency} document{q.frequency !== 1 ? 's' : ''}
+                        </CardDescription>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-gray-500">
-                    <AlertCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                    <p className="mb-2">No PDFs have been uploaded yet</p>
-                    <p className="text-sm">
-                      Go to the Upload PDFs tab to add some documents
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="analysis">
-            <Card>
-              <CardHeader>
-                <CardTitle>Extracted Questions</CardTitle>
-                <CardDescription>
-                  View questions extracted from your PDFs and analyze patterns.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {pdfs.length > 0 ? (
-                  <div className="space-y-6">
-                    <div className="p-4 border rounded-lg bg-smns-purple-light/5">
-                      <p className="font-medium text-smns-purple-dark mb-2">
-                        Repeated Question Pattern
-                      </p>
-                      <p className="text-gray-700 mb-4">
-                        "Explain the process of photosynthesis and its importance in the ecosystem."
-                      </p>
-                      <div className="flex items-center text-sm text-gray-500">
-                        <p>Found in 3 documents</p>
-                        <span className="mx-2">•</span>
-                        <p>High importance</p>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs font-medium bg-smns-purple-light/20 text-smns-purple-dark px-2 py-1 rounded-full">
+                          Frequency: {q.frequency}
+                        </span>
                       </div>
                     </div>
-                    
-                    <div className="space-y-4">
-                      <h3 className="font-medium">All Extracted Questions</h3>
-                      <div className="p-4 border rounded-lg">
-                        <p className="font-medium mb-1">
-                          What are the main factors affecting climate change?
-                        </p>
-                        <p className="text-sm text-gray-500 mb-2">
-                          From: Lecture Notes Week 1.pdf
-                        </p>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="text-sm">
+                      <div className="font-medium text-muted-foreground mb-1 flex items-center">
+                        <List className="h-4 w-4 mr-1" /> Sources:
                       </div>
-                      
-                      <div className="p-4 border rounded-lg">
-                        <p className="font-medium mb-1">
-                          Describe the structure of an atom and explain the properties of its subatomic particles.
-                        </p>
-                        <p className="text-sm text-gray-500 mb-2">
-                          From: Chemistry Question Bank.pdf
-                        </p>
-                      </div>
-                      
-                      <div className="p-4 border rounded-lg bg-smns-purple-light/5">
-                        <p className="font-medium mb-1 text-smns-purple-dark">
-                          Explain the process of photosynthesis and its importance in the ecosystem.
-                        </p>
-                        <p className="text-sm text-gray-500 mb-2">
-                          From: Multiple documents
-                        </p>
+                      <div className="flex flex-wrap gap-2">
+                        {q.sources.map((source, i) => (
+                          <span 
+                            key={i} 
+                            className="text-xs bg-gray-100 px-2 py-1 rounded-md"
+                          >
+                            {source}
+                          </span>
+                        ))}
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-gray-500">
-                    <AlertCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                    <p className="mb-2">No questions have been extracted yet</p>
-                    <p className="text-sm">
-                      Upload and analyze PDFs to see extracted questions
-                    </p>
-                  </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center p-8 text-center">
+                <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium">No Questions Found</h3>
+                <p className="text-sm text-muted-foreground mt-2">
+                  {searchTerm
+                    ? `No questions match "${searchTerm}"`
+                    : "Upload PDFs to extract questions"}
+                </p>
+                {!searchTerm && activeTab === "questions" && (
+                  <Button 
+                    className="mt-4 bg-smns-purple hover:bg-smns-purple-dark"
+                    onClick={() => setActiveTab("uploaded")}
+                  >
+                    <Upload className="mr-2 h-4 w-4" /> Upload PDF
+                  </Button>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
