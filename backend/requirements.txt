@@ -1,0 +1,11 @@
+# fastapi
+# uvicorn
+# pillow
+# google-generativeai
+# python-dotenv
+
+# Flask
+# flask-cors
+# PyMuPDF
+
+python-multipart

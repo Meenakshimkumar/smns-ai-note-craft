@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Popover,
@@ -8,6 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageCircle, Send, Sparkles, X } from "lucide-react";
+import { callGemini } from "@/utils/gemini";
 
 interface Message {
   role: "user" | "assistant";
@@ -19,33 +19,31 @@ export const AiChatWidget = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hello! I'm your SMNS AI assistant. How can I help you with your notes today?",
+      content: "Hello! I'm your SMNS AI assistant. How can I help you?",
     },
   ]);
   const [input, setInput] = useState("");
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
-    
-    // Add user message
-    const newMessages: Message[] = [
-      ...messages,
-      { role: "user", content: input.trim() },
-    ];
-    setMessages(newMessages);
+
+    const userMessage: Message = { role: "user", content: input.trim() };
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setInput("");
-    
-    // Simulate AI response
-    setTimeout(() => {
+
+    try {
+      const geminiReply = await callGemini(input.trim());
+      const aiMessage: Message = { role: "assistant", content: geminiReply };
+      setMessages([...updatedMessages, aiMessage]);
+    } catch (error) {
+      console.error("Gemini API error:", error);
       setMessages([
-        ...newMessages,
-        {
-          role: "assistant",
-          content: `I'm simulating a response to: "${input.trim()}". In the full version, I'll provide actual AI-powered answers to help with your notes and study materials.`,
-        },
+        ...updatedMessages,
+        { role: "assistant", content: "Oops! Something went wrong with Gemini." },
       ]);
-    }, 1000);
+    }
   };
 
   return (

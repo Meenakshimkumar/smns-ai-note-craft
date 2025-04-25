@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AiChatWidget } from "@/components/chat/AiChatWidget";
@@ -18,13 +17,36 @@ const fontStyles = [
 const Handwriting = () => {
   const [selectedFont, setSelectedFont] = useState("casual");
   const [savedImage, setSavedImage] = useState<string | null>(null);
-  
-  const handleSaveImage = (dataUrl: string) => {
+  const [convertedText, setConvertedText] = useState<string | null>(null);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [sourceType, setSourceType] = useState<string | null>(null); // "canvas" or "upload"
+  const [isConverting, setIsConverting] = useState(false);
+
+  const handleSaveImage = async (dataUrl: string, source: "canvas" | "upload") => {
     setSavedImage(dataUrl);
-    // In a real implementation, this would send the image to a backend for processing
-    console.log("Saved handwriting image:", dataUrl);
+    setSourceType(source);
+    setConvertedText("Converting...");
+    setIsConverting(true);
+
+    try {
+      const response = await fetch("http://localhost:8000/convert-handwriting", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ image_base64: dataUrl }),
+      });
+
+      const result = await response.json();
+      setConvertedText(result.text);
+    } catch (error) {
+      console.error("Error converting handwriting:", error);
+      setConvertedText("Failed to convert handwriting.");
+    } finally {
+      setIsConverting(false);
+    }
   };
-  
+
   return (
     <AppLayout>
       <div className="max-w-4xl mx-auto">
@@ -32,28 +54,72 @@ const Handwriting = () => {
         <p className="text-gray-600 mb-6">
           Write naturally and see your handwriting converted to digital text in real-time.
         </p>
-        
+
         <Tabs defaultValue="write">
           <TabsList className="mb-6">
             <TabsTrigger value="write">Write & Convert</TabsTrigger>
             <TabsTrigger value="settings">Font Settings</TabsTrigger>
             <TabsTrigger value="samples">My Samples</TabsTrigger>
           </TabsList>
-          
+
+          {/* === WRITE TAB === */}
           <TabsContent value="write">
-            <Card>
+            <Card className="mb-6">
               <CardHeader>
-                <CardTitle>Handwriting Canvas</CardTitle>
+                <CardTitle>Draw on Canvas</CardTitle>
                 <CardDescription>
-                  Write using your finger, stylus, or mouse and your handwriting will be converted to text.
+                  Use your finger, stylus, or mouse to write, then convert it to text.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <HandwritingCanvas onSave={handleSaveImage} />
+                <HandwritingCanvas onSave={(img) => handleSaveImage(img, "canvas")} />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Upload Handwritten Image</CardTitle>
+                <CardDescription>
+                  Upload a photo or scanned image of your handwriting.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      const base64String = reader.result as string;
+                      setUploadedImage(base64String);
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                  className="mb-4"
+                />
+                {uploadedImage && (
+                  <>
+                    <img src={uploadedImage} alt="Preview" className="mb-4 w-full max-w-sm rounded-lg" />
+                    <button
+                      onClick={() => handleSaveImage(uploadedImage, "upload")}
+                      disabled={isConverting}
+                      className={`px-4 py-2 rounded text-white ${
+                        isConverting
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-blue-600 hover:bg-blue-700"
+                      }`}
+                    >
+                      {isConverting ? "Converting..." : "Convert Handwriting"}
+                    </button>
+                  </>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
-          
+
+          {/* === SETTINGS TAB === */}
           <TabsContent value="settings">
             <Card>
               <CardHeader>
@@ -73,19 +139,19 @@ const Handwriting = () => {
                       <RadioGroupItem value={font.id} id={font.id} />
                       <Label
                         htmlFor={font.id}
-                        className={`text-lg ${font.id === 'cursive' ? 'font-handwriting' : ''}`}
+                        className={`text-lg ${font.id === "cursive" ? "font-handwriting" : ""}`}
                       >
                         {font.name}
                       </Label>
                     </div>
                   ))}
                 </RadioGroup>
-                
+
                 <div className="mt-8 p-4 bg-gray-50 rounded-lg">
                   <h3 className="text-sm font-medium text-gray-500 mb-2">Preview:</h3>
-                  <p 
+                  <p
                     className={`text-lg ${
-                      selectedFont === 'cursive' ? 'font-handwriting' : ''
+                      selectedFont === "cursive" ? "font-handwriting" : ""
                     }`}
                   >
                     This is how your converted text will appear.
@@ -94,7 +160,8 @@ const Handwriting = () => {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
+          {/* === SAMPLES TAB === */}
           <TabsContent value="samples">
             <Card>
               <CardHeader>
@@ -108,16 +175,21 @@ const Handwriting = () => {
                   <div className="grid gap-6 md:grid-cols-2">
                     <div className="border p-4 rounded-lg">
                       <h3 className="text-sm font-medium mb-2">Handwriting Sample</h3>
-                      <img 
-                        src={savedImage} 
-                        alt="Handwriting sample" 
+                      <img
+                        src={savedImage}
+                        alt="Handwriting sample"
                         className="border rounded-lg w-full"
                       />
                     </div>
                     <div className="p-4 rounded-lg border">
                       <h3 className="text-sm font-medium mb-2">Converted Text</h3>
-                      <p className="font-handwriting text-lg">
-                        This is a simulation of converted text from your handwriting...
+                      {sourceType && (
+                        <p className="text-sm text-gray-500 mb-2">
+                          Source: {sourceType === "canvas" ? "Drawn on Canvas" : "Uploaded Image"}
+                        </p>
+                      )}
+                      <p className="text-base whitespace-pre-wrap">
+                        {convertedText || "Converted text will appear here after saving a sample."}
                       </p>
                     </div>
                   </div>

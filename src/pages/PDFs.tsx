@@ -1,89 +1,95 @@
-
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AiChatWidget } from "@/components/chat/AiChatWidget";
-import { FileText, Upload, Search, List, AlertCircle } from "lucide-react";
-
-// Sample data for extracted questions
-const sampleQuestions = [
-  {
-    id: 1,
-    question: "What are the key principles of React's component architecture?",
-    frequency: 3,
-    sources: ["React Basics.pdf", "Advanced Frontend.pdf", "Interview Prep.pdf"],
-  },
-  {
-    id: 2,
-    question: "Explain the concept of state management in modern web applications.",
-    frequency: 2,
-    sources: ["React Basics.pdf", "Advanced Frontend.pdf"],
-  },
-  {
-    id: 3,
-    question: "How does the virtual DOM improve performance in React?",
-    frequency: 2,
-    sources: ["React Basics.pdf", "Performance Optimization.pdf"],
-  },
-];
-
-// Sample data for uploaded PDFs
-const samplePdfs = [
-  {
-    id: 1,
-    name: "React Basics.pdf",
-    size: "2.4 MB",
-    date: "2023-09-15",
-    questions: 12,
-  },
-  {
-    id: 2,
-    name: "Advanced Frontend.pdf",
-    size: "3.8 MB",
-    date: "2023-10-02",
-    questions: 18,
-  },
-  {
-    id: 3,
-    name: "Interview Prep.pdf",
-    size: "1.6 MB",
-    date: "2023-10-10",
-    questions: 25,
-  },
-  {
-    id: 4,
-    name: "Performance Optimization.pdf",
-    size: "2.2 MB",
-    date: "2023-09-28",
-    questions: 8,
-  },
-];
+import { FileText, Upload, Search, List, AlertCircle, ScrollText } from "lucide-react";
 
 const PDFs = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("uploaded");
+  const [pdfData, setPdfData] = useState<any[]>([]);
+  const [questionsData, setQuestionsData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
   
-  const filteredPdfs = samplePdfs.filter(pdf => 
-    pdf.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append("file", file);
   
-  const filteredQuestions = sampleQuestions.filter(q => 
-    q.question.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    setIsLoading(true);
+  
+    try {
+      const res = await fetch("http://localhost:5000/upload", {
+        method: "POST",
+        body: formData,
+      });
+  
+      const data = await res.json();
+  
+      if (data.error) {
+        alert("Error: " + data.error);
+      } else {
+        const newPdf = {
+          id: pdfData.length + 1,
+          name: data.filename,
+          size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+          date: new Date().toISOString().split("T")[0],
+          questions: data.questions.length,
+          summary: data.summary,
+        };
+  
+        setPdfData((prev) => [...prev, newPdf]);
+  
+        const updatedQuestions = data.questions.map((q: any, index: number) => ({
+          ...q,
+          id: questionsData.length + index + 1,
+        }));
+        setQuestionsData((prev) => [...prev, ...updatedQuestions]);
+      }
+    } catch (err) {
+      alert("Unexpected error during upload");
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };  
+
+  const filteredPdfs = pdfData.filter((pdf) =>
+    pdf.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );  
+
+  const filteredQuestions = questionsData.filter((q) =>
+    q.question?.toLowerCase().includes(searchTerm.toLowerCase())
+  );  
 
   return (
     <AppLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">PDF Management</h1>
-          <Button className="bg-smns-purple hover:bg-smns-purple-dark">
-            <Upload className="mr-2 h-4 w-4" /> Upload PDF
-          </Button>
+          <div>
+            <input
+              type="file"
+              accept="application/pdf"
+              onChange={handleFileUpload}
+              ref={fileInputRef}
+              style={{ display: "none" }}
+            />
+            <Button
+              className="bg-smns-purple hover:bg-smns-purple-dark"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="mr-2 h-4 w-4" /> Upload PDF
+            </Button>
+          </div>
         </div>
-        
+
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -94,16 +100,22 @@ const PDFs = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        
+        {isLoading && (
+          <div className="text-sm p-4 bg-yellow-100 text-yellow-800 rounded-md">
+            Processing your PDF... this may take a few seconds ⏳
+          </div>
+        )}
+
         <Tabs defaultValue="uploaded" onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="uploaded">Uploaded PDFs</TabsTrigger>
             <TabsTrigger value="questions">Extracted Questions</TabsTrigger>
           </TabsList>
-          
+
+          {/* Uploaded PDFs */}
           <TabsContent value="uploaded" className="space-y-4">
             {filteredPdfs.length > 0 ? (
-              filteredPdfs.map(pdf => (
+              filteredPdfs.map((pdf) => (
                 <Card key={pdf.id}>
                   <CardHeader className="p-4">
                     <div className="flex items-start justify-between">
@@ -116,14 +128,19 @@ const PDFs = () => {
                           </CardDescription>
                         </div>
                       </div>
-                      <Button variant="outline" className="h-8" size="sm">
-                        View
-                      </Button>
                     </div>
                   </CardHeader>
-                  <CardContent className="p-4 pt-0">
+                  <CardContent className="p-4 pt-0 space-y-4">
                     <div className="text-sm text-muted-foreground">
                       {pdf.questions} questions extracted
+                    </div>
+                    <div className="text-sm">
+                      <div className="font-medium text-muted-foreground mb-1 flex items-center">
+                        <ScrollText className="h-4 w-4 mr-1" /> Summary:
+                      </div>
+                      <div className="text-sm bg-gray-100 rounded-md p-3 whitespace-pre-wrap">
+                        {pdf.summary}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -138,24 +155,29 @@ const PDFs = () => {
                     : "Upload your first PDF to get started"}
                 </p>
                 {!searchTerm && (
-                  <Button className="mt-4 bg-smns-purple hover:bg-smns-purple-dark">
+                  <Button
+                    className="mt-4 bg-smns-purple hover:bg-smns-purple-dark"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
                     <Upload className="mr-2 h-4 w-4" /> Upload PDF
                   </Button>
                 )}
               </div>
             )}
           </TabsContent>
-          
+
+          {/* Extracted Questions */}
           <TabsContent value="questions" className="space-y-4">
             {filteredQuestions.length > 0 ? (
-              filteredQuestions.map(q => (
+              filteredQuestions.map((q) => (
                 <Card key={q.id}>
                   <CardHeader className="p-4">
                     <div className="flex items-start justify-between">
                       <div>
                         <CardTitle className="text-lg">{q.question}</CardTitle>
                         <CardDescription>
-                          Appears in {q.frequency} document{q.frequency !== 1 ? 's' : ''}
+                          Appears in {q.frequency} document
+                          {q.frequency !== 1 ? "s" : ""}
                         </CardDescription>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -171,9 +193,9 @@ const PDFs = () => {
                         <List className="h-4 w-4 mr-1" /> Sources:
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        {q.sources.map((source, i) => (
-                          <span 
-                            key={i} 
+                        {q.sources.map((source: string, i: number) => (
+                          <span
+                            key={i}
                             className="text-xs bg-gray-100 px-2 py-1 rounded-md"
                           >
                             {source}
@@ -194,7 +216,7 @@ const PDFs = () => {
                     : "Upload PDFs to extract questions"}
                 </p>
                 {!searchTerm && activeTab === "questions" && (
-                  <Button 
+                  <Button
                     className="mt-4 bg-smns-purple hover:bg-smns-purple-dark"
                     onClick={() => setActiveTab("uploaded")}
                   >

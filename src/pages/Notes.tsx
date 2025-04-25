@@ -32,6 +32,7 @@ interface Note {
   id: string;
   title: string;
   preview: string;
+  content: string; // optional
   date: string;
   type: "text" | "handwriting" | "pdf" | "voice" | "image";
   tags: string[];
@@ -42,6 +43,7 @@ const mockNotes: Note[] = [
     id: "1",
     title: "Biology Lecture Notes",
     preview: "Cellular respiration is the process by which cells convert nutrients into energy...",
+    content: "",
     date: "2023-04-15",
     type: "text",
     tags: ["biology", "science"],
@@ -50,6 +52,7 @@ const mockNotes: Note[] = [
     id: "2",
     title: "Project Meeting Summary",
     preview: "Discussed timeline adjustments and new feature priorities...",
+    content: "",
     date: "2023-04-12",
     type: "voice",
     tags: ["work", "meetings"],
@@ -58,6 +61,7 @@ const mockNotes: Note[] = [
     id: "3",
     title: "Chemistry Formulas",
     preview: "Key formulas and reactions for organic chemistry...",
+    content: "",
     date: "2023-04-10",
     type: "handwriting",
     tags: ["chemistry", "formulas"],
@@ -66,6 +70,7 @@ const mockNotes: Note[] = [
     id: "4",
     title: "Physics Textbook Chapter 5",
     preview: "Notes on thermodynamics and heat transfer...",
+    content: "",
     date: "2023-04-05",
     type: "pdf",
     tags: ["physics", "thermodynamics"],
@@ -74,6 +79,7 @@ const mockNotes: Note[] = [
     id: "5",
     title: "Diagram of Cell Structure",
     preview: "Visual representation of cellular components and their functions...",
+    content: "",
     date: "2023-04-03",
     type: "image",
     tags: ["biology", "diagrams"],
@@ -83,6 +89,12 @@ const mockNotes: Note[] = [
 const Notes = () => {
   const [notes, setNotes] = useState<Note[]>(mockNotes);
   const [searchQuery, setSearchQuery] = useState("");
+  const [newNoteModalOpen, setNewNoteModalOpen] = useState(false);
+  const [newNoteTitle, setNewNoteTitle] = useState("");
+  const [newNoteType, setNewNoteType] = useState<Note["type"]>("text");
+  const [newNoteTags, setNewNoteTags] = useState<string[]>([]);
+  const [newNoteContent, setNewNoteContent] = useState("");
+  const [editingNote, setEditingNote] = useState<Note | null>(null);
   
   const filteredNotes = notes.filter((note) => 
     note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -107,6 +119,45 @@ const Notes = () => {
     }
   };
   
+  const handleCreateNote = () => {
+    if (editingNote) {
+      const updatedNotes = notes.map(n =>
+        n.id === editingNote.id
+          ? {
+              ...n,
+              title: newNoteTitle,
+              content: newNoteContent,
+              preview: newNoteContent.slice(0, 50),
+              tags: newNoteTags,
+              type: newNoteType,
+              date: new Date().toLocaleDateString(),
+            }
+          : n
+      );
+      setNotes(updatedNotes);
+      setEditingNote(null);
+    } else {
+      const newNote: Note = {
+        id: (notes.length + 1).toString(),
+        title: newNoteTitle,
+        preview: newNoteContent.slice(0, 50),
+        content: newNoteContent,
+        date: new Date().toLocaleDateString(),
+        type: newNoteType,
+        tags: newNoteTags,
+      };
+      setNotes([...notes, newNote]);
+    }
+  
+    // Clear fields and close modal
+    setNewNoteModalOpen(false);
+    setNewNoteTitle("");
+    setNewNoteContent("");
+    setNewNoteTags([]);
+    setNewNoteType("text");
+  };
+  
+
   return (
     <AppLayout>
       <div className="max-w-5xl mx-auto">
@@ -122,13 +173,78 @@ const Notes = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button className="bg-smns-purple hover:bg-smns-purple-dark">
+            <Button className="bg-smns-purple hover:bg-smns-purple-dark" onClick={() => setNewNoteModalOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               New Note
             </Button>
           </div>
         </div>
         
+        {/* Modal for creating new note */}
+        {newNoteModalOpen && (
+          <div className="fixed inset-0 flex justify-center items-center bg-gray-800 bg-opacity-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-[400px]">
+              <h2 className="text-2xl font-bold mb-4">Create New Note</h2>
+              <Input
+                placeholder="Note Title"
+                className="mb-4"
+                value={newNoteTitle}
+                onChange={(e) => setNewNoteTitle(e.target.value)}
+              />
+              <textarea
+                placeholder="Note Content"
+                className="w-full p-2 mb-4 border rounded-md"
+                rows={4}
+                value={newNoteContent}
+                onChange={(e) => setNewNoteContent(e.target.value)}
+              />
+              <Input
+                placeholder="Tags (comma separated)"
+                className="mb-4"
+                value={newNoteTags.join(", ")}
+                onChange={(e) => setNewNoteTags(e.target.value.split(",").map(tag => tag.trim()))}
+              />
+              <div className="mb-4">
+                <select
+                  value={newNoteType}
+                  onChange={(e) => setNewNoteType(e.target.value as Note["type"])}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="text">Text</option>
+                  <option value="handwriting">Handwriting</option>
+                  <option value="pdf">PDF</option>
+                  <option value="voice">Voice</option>
+                  <option value="image">Image</option>
+                </select>
+              </div>
+              <div className="flex justify-end">
+                <h2 className="text-2xl font-bold mb-4">
+                  {editingNote ? "Edit Note" : "Create New Note"}
+                </h2>
+                <Button
+                  onClick={handleCreateNote}
+                  className="bg-smns-purple hover:bg-smns-purple-dark"
+                >
+                  {editingNote ? "Update Note" : "Create Note"}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setNewNoteModalOpen(false);
+                    setEditingNote(null);
+                    setNewNoteTitle("");
+                    setNewNoteContent("");
+                    setNewNoteTags([]);
+                    setNewNoteType("text");
+                  }}
+                  className="ml-2"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <Tabs defaultValue="all">
           <TabsList className="mb-6">
             <TabsTrigger value="all">All Notes</TabsTrigger>
@@ -175,6 +291,16 @@ const Notes = () => {
                             <Tag className="h-4 w-4 mr-2" />
                             Manage Tags
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setEditingNote(note);
+                            setNewNoteTitle(note.title);
+                            setNewNoteContent(note.content);
+                            setNewNoteTags(note.tags);
+                            setNewNoteType(note.type);
+                            setNewNoteModalOpen(true);
+                          }}>
+                            ✏️ Edit Note
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -189,9 +315,11 @@ const Notes = () => {
                         </span>
                       ))}
                     </div>
+                    <CardDescription>{note.preview}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-gray-600 line-clamp-3">{note.preview}</p>
+                    <p className="text-sm text-gray-600 line-clamp-3">{note.content}</p>
                     <p className="text-xs text-gray-400 mt-2">{note.date}</p>
                   </CardContent>
                 </Card>
@@ -199,9 +327,9 @@ const Notes = () => {
               
               <Card className="border-dashed hover:border-smns-purple hover:border-solid transition-colors cursor-pointer flex items-center justify-center min-h-[200px]">
                 <div className="text-center p-6">
-                  <div className="h-12 w-12 rounded-full bg-smns-purple-light/20 flex items-center justify-center mx-auto mb-4">
+                  <Button className="h-12 w-12 rounded-full bg-smns-purple-light/20 flex items-center justify-center mx-auto mb-4" onClick={() => setNewNoteModalOpen(true)}>
                     <Plus className="h-6 w-6 text-smns-purple" />
-                  </div>
+                  </Button>
                   <p className="font-medium text-smns-purple">Create New Note</p>
                   <p className="text-sm text-gray-500 mt-1">Add text, images, voice, or handwritten notes</p>
                 </div>
