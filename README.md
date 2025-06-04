@@ -1,49 +1,107 @@
-## How can I edit this code?
+# 📚 SMNS - Smart Multi-Note System
 
-There are several ways of editing your application.
+**SMNS - Smart Multi-Note System** is an AI-powered note-taking tool that transforms content from PDFs, handwritten notes, and voice recordings into clean, structured digital notes. Designed for students, educators, and professionals, NoteCraft automates learning with features like summarization, flashcard generation, and Q\&A support.
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. 
+## ✨ Features
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+* ✍️ **Handwriting to Typed Notes**
+  Convert handwritten notes into clean, editable text.
 
-Follow these steps:
+* 📄 **PDF Processing**
+  Upload PDFs to extract repeated questions, generate summaries, and more.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+* 🎤 **Voice Note Processing**
+  Record voice inputs to generate:
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+  * Transcripts
+  * Topic descriptions
+  * Relevant images
 
-# Step 3: Install the necessary dependencies.
-npm i
+* 💡 **AI-Powered Tools**
+  Generate summaries, mind maps, and Q\&A from notes using AI.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+---
+
+## 🛠️ Tech Stack
+
+* 🖥️ [React](https://reactjs.org/) – Frontend library
+* 💬 [TypeScript](https://www.typescriptlang.org/) – Strongly typed JavaScript
+* ⚡ [Vite](https://vitejs.dev/) – Fast frontend bundler
+* 🎨 [Tailwind CSS](https://tailwindcss.com/) – Utility-first CSS framework
+* 🧩 [shadcn/ui](https://ui.shadcn.dev/) – UI components for React
+* 🐍 [Python](https://www.python.org/) – Backend programming
+* ⚙️ [FastAPI](https://fastapi.tiangolo.com/) – For handwriting and voice features
+* 🌐 [Flask](https://flask.palletsprojects.com/) – For PDF processing
+* 🔌 [Uvicorn](https://www.uvicorn.org/) – ASGI server for FastAPI
+* 🤖 [Gemini API](https://deepmind.google/technologies/gemini/) – AI model integration
+
+---
+
+## 📦 Installation
+
+### 1️⃣ Clone the Repository
+
+```bash
+git clone https://github.com/Meenakshimkumar/smns-ai-note-craft.git
+cd smns-ai-note-craft
+```
+
+---
+
+### 2️⃣ Frontend Setup
+
+```bash
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+* Frontend runs at: `http://localhost:3000`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+### 3️⃣ Backend Setup
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Navigate to the backend directory:
 
-## What technologies are used for this project?
+```bash
+cd backend
+```
 
-This project is built with:
+Then, run the appropriate command based on the feature:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+| 🔧 Feature               | ▶️ Run Command               | Framework |
+| ------------------------ | ---------------------------- | --------- |
+| 📄 PDF Summarizer        | `python app.py`              | Flask     |
+| ✍️ Handwriting Processor | `uvicorn main:app --reload`  | FastAPI   |
+| 🎤 Voice Input Handler   | `uvicorn index:app --reload` | FastAPI   |
+
+---
+
+## 📁 Project Structure
+
+```
+smns-ai-note-craft/
+├── backend/
+│   ├── app.py        # PDF processing (Flask)
+│   ├── main.py       # Handwriting recognition (FastAPI)
+│   └── index.py      # Voice processing (FastAPI)
+├── public/           # Static assets
+├── src/              # React frontend
+├── .env              # Environment variables
+├── index.html        # Main entry HTML
+├── package.json      # Frontend dependencies
+├── tailwind.config.ts
+└── vite.config.ts
+```
+
+---
+
+## 🧑‍💻 Team Members
+
+* **Meenakshi M Kumar** – Frontend & AI Integration
+* **Narthana Baby B S** – Handwriting-to-Text & Backend
+* **Swsthik H Nair** – Voice Processing & Backend
+* **Swarag V S** – PDF Summarization & UI Testing
+
